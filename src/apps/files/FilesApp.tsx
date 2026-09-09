@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useKernel } from '../../kernel/store'
-import { formatBytes, joinPath, resolveDir, sizeOf, splitPath, type VDir } from '../../kernel/vfs'
+import { formatBytes, joinPath, parentOf, resolveDir, sizeOf, splitPath, type VDir } from '../../kernel/vfs'
 import { STORAGE_TOTAL_BYTES } from '../../kernel/config'
 import { AppScreen, Bar, Button, Empty, Row, Section } from '../../shell/ui'
+import { useBackHandler } from '../../shell/useBackHandler'
 
 /** RF-10: explorador del sistema de archivos virtual jerarquico. */
 export function FilesApp() {
@@ -15,6 +16,17 @@ export function FilesApp() {
 
   const dir: VDir | null = resolveDir(fs, path)
   const segments = splitPath(path)
+
+  // RF-03: el boton/gesto "Atras" del sistema sube un nivel de carpeta antes
+  // de salir a inicio; en la raiz no hay nada que retroceder dentro de la app.
+  useBackHandler(
+    path !== '/'
+      ? () => {
+          setPath(parentOf(path))
+          return true
+        }
+      : null,
+  )
 
   return (
     <AppScreen title={t('files.title')}>

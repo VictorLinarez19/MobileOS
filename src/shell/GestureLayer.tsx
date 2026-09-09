@@ -18,7 +18,7 @@ const FLICK_V = 0.5
  * gestiona en el propio `Launcher`, no aqui.
  */
 export function GestureLayer({ inApp }: { inApp: boolean }) {
-  const goHome = useKernel((s) => s.goHome)
+  const goBack = useKernel((s) => s.goBack)
   const setRecentsOpen = useKernel((s) => s.setRecentsOpen)
   const setNotificationsOpen = useKernel((s) => s.setNotificationsOpen)
 
@@ -27,7 +27,9 @@ export function GestureLayer({ inApp }: { inApp: boolean }) {
       if (info.dy > -SWIPE_PX && info.vy > -FLICK_V) return
       const longSwipe = info.dy < -140 || info.vy < -0.9
       if (inApp && !longSwipe) {
-        goHome()
+        // Mismo comportamiento que el boton "Atras" de la NavBar: primero
+        // la navegacion interna de la app, y si no tiene, sale a inicio.
+        goBack()
       } else {
         setRecentsOpen(true)
       }

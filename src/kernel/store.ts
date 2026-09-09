@@ -84,12 +84,24 @@ export interface KernelStore {
   /** Nivel de bateria en el que ya se aviso al usuario, para no repetir el aviso. */
   batteryWarnedAt: number | null
 
+  /**
+   * Manejador de "atras" registrado por la app en primer plano, si tiene
+   * navegacion propia (por ejemplo subir un nivel de carpeta en Archivos, o
+   * cancelar la edicion de una nota). Devuelve `true` si consumio el gesto de
+   * retroceso; `false` si no hay nada que retroceder dentro de la app, en
+   * cuyo caso el boton/gesto de "Atras" del sistema cae a `goHome()`.
+   */
+  backHandler: (() => boolean) | null
+
   boot: () => Promise<void>
   doTick: () => void
 
   launchApp: (appId: string) => void
   focusProcess: (pid: number) => void
   goHome: () => void
+  /** Boton/gesto de sistema "Atras": delega primero en la app, si aplica. */
+  goBack: () => void
+  setBackHandler: (handler: (() => boolean) | null) => void
   killProcess: (pid: number) => void
   killAllBackground: () => void
 
@@ -155,6 +167,7 @@ export const useKernel = create<KernelStore>((set, get) => ({
   recentsOpen: false,
   toast: null,
   batteryWarnedAt: null,
+  backHandler: null,
 
   t: (key, vars) => translate(get().settings.language, key, vars),
 
@@ -316,7 +329,9 @@ export const useKernel = create<KernelStore>((set, get) => ({
         foregroundPid = proc.pid
         procs = [...procs, proc]
       }
-      return { procs, foregroundPid, recentsOpen: false, notificationsOpen: false }
+      // El cambio de app en primer plano invalida el "atras" que hubiera
+      // registrado la app anterior (por ejemplo, subir de carpeta en Archivos).
+      return { procs, foregroundPid, recentsOpen: false, notificationsOpen: false, backHandler: null }
     })
   },
 
@@ -330,7 +345,7 @@ export const useKernel = create<KernelStore>((set, get) => ({
         if (p.state === 'running') return transition(p, 'background', tick)
         return p
       })
-      return { procs, foregroundPid: pid, recentsOpen: false, notificationsOpen: false }
+      return { procs, foregroundPid: pid, recentsOpen: false, notificationsOpen: false, backHandler: null }
     })
   },
 
@@ -342,8 +357,23 @@ export const useKernel = create<KernelStore>((set, get) => ({
           ? transition(p, 'background', s.tick)
           : p,
       )
-      return { procs, foregroundPid: null, recentsOpen: false, notificationsOpen: false }
+      return { procs, foregroundPid: null, recentsOpen: false, notificationsOpen: false, backHandler: null }
     })
+  },
+
+  /**
+   * Boton/gesto de sistema "Atras". Si la app en primer plano registro un
+   * manejador propio (navegacion interna) se le da la primera oportunidad;
+   * solo si no hay nada que retroceder dentro de la app se sale a inicio.
+   */
+  goBack() {
+    const { backHandler, goHome } = get()
+    const handled = backHandler ? backHandler() : false
+    if (!handled) goHome()
+  },
+
+  setBackHandler(handler) {
+    set({ backHandler: handler })
   },
 
   killProcess(pid) {

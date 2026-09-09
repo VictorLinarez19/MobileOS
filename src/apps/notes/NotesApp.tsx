@@ -3,6 +3,7 @@ import { useKernel } from '../../kernel/store'
 import { makeSyscalls } from '../../kernel/syscalls'
 import { walkFiles } from '../../kernel/vfs'
 import { AppScreen, Button, Empty, Section } from '../../shell/ui'
+import { useBackHandler } from '../../shell/useBackHandler'
 
 /** Demuestra la persistencia del RF-09: cada nota es un archivo de texto en /storage/Documentos. */
 export function NotesApp() {
@@ -11,6 +12,17 @@ export function NotesApp() {
   const t = useKernel((s) => s.t)
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+
+  // RF-03: el boton/gesto "Atras" del sistema cierra el editor (sin guardar)
+  // antes de salir a inicio; en la lista de notas no hay nada que retroceder.
+  useBackHandler(
+    editing !== null
+      ? () => {
+          setEditing(null)
+          return true
+        }
+      : null,
+  )
 
   const notes = walkFiles(fs)
     .filter(({ path }) => path.startsWith('/storage/Documentos/') && path.endsWith('.txt'))
