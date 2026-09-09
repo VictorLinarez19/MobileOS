@@ -12,6 +12,7 @@ import { GestureLayer } from './shell/GestureLayer'
 import { HomeIndicator } from './shell/HomeIndicator'
 import { AppWindow } from './shell/AppWindow'
 import { NavBar } from './shell/NavBar'
+import { BrightnessOverlay } from './shell/BrightnessOverlay'
 
 function BootScreen() {
   const t = useKernel((s) => s.t)
@@ -100,6 +101,7 @@ export default function App() {
             <Recents />
             <Toast />
             {locked && <LockScreen />}
+            <BrightnessOverlay />
           </>
         )}
       </PhoneFrame>
