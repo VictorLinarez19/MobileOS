@@ -5,3 +5,4 @@ dist-ssr/
 .vscode/
 .DS_Store
 *.local
+pautas.md
